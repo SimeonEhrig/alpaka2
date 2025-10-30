@@ -35,8 +35,8 @@ namespace alpaka::onAcc::internal
             auto const& neutralElement,
             auto&& reduceFunc,
             auto&& func,
-            alpaka::concepts::IGeneratorOrMdSpan auto&& data0,
-            alpaka::concepts::IGeneratorOrMdSpan auto&&... dataN) const
+            alpaka::concepts::IDataSource auto&& data0,
+            alpaka::concepts::IDataSource auto&&... dataN) const
         {
             auto numElements = typename ALPAKA_TYPEOF(extents)::UniVec{extents};
             using ValueType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(data0)>;
@@ -95,7 +95,7 @@ namespace alpaka::onAcc::internal
             auto const& acc,
             auto const& dataIdx,
             auto&& func,
-            alpaka::concepts::IGeneratorOrMdSpan auto&&... data)
+            alpaka::concepts::IDataSource auto&&... data)
         {
             return func(acc, SimdPtr{ALPAKA_FORWARD(data), dataIdx, T_MemAlignment{}, CVec<uint32_t, T_width>{}}...);
         }
@@ -114,7 +114,7 @@ namespace alpaka::onAcc::internal
             std::integer_sequence<uint32_t, T_repeat...>,
             auto&& reduceFunc,
             auto&& func,
-            alpaka::concepts::IGeneratorOrMdSpan auto&&... data)
+            alpaka::concepts::IDataSource auto&&... data)
         {
             /* We do not check if the iterator points to a valid element, the caller must ensure that we can safely
              * increase the iterator without jumping over iter.end().
@@ -221,8 +221,8 @@ namespace alpaka::onAcc::internal
             auto const& neutralElement,
             auto&& userReduceFunc,
             auto&& func,
-            alpaka::concepts::IGeneratorOrMdSpan auto&& data0,
-            alpaka::concepts::IGeneratorOrMdSpan auto&&... dataN) const
+            alpaka::concepts::IDataSource auto&& data0,
+            alpaka::concepts::IDataSource auto&&... dataN) const
         {
             auto reduceFunc = getReducer(acc, userReduceFunc);
 
