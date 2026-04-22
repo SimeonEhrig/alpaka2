@@ -6,6 +6,9 @@ import subprocess
 import shutil
 import sys
 
+# load extended command usable in the rst documents e.g. filteredliteralinclude
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "sphinx_extensions")))
+
 # allows to import module `build_helper`
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 from sphinx_helper.single_header import generate_single_header
@@ -76,6 +79,7 @@ extensions = [
     "sphinx.ext.mathjax",
     #    'sphinx.ext.napoleon',
     "breathe",
+    "filtered_literalinclude",
     "sphinx_rtd_theme",
     "sphinxcontrib.programoutput",
     #    'matplotlib.sphinxext.plot_directive'
@@ -98,7 +102,7 @@ master_doc = "index"
 language = "en"
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = "sphinx"  #'default'
+pygments_style = "sphinx"  # 'default'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
@@ -119,7 +123,17 @@ html_static_path = ["_static"]
 html_css_files = ["custom.css"]
 
 html_logo = "../logo/alpaka.svg"
-html_theme_options = {"logo_only": True}
+html_theme_options = {
+    "logo_only": True,
+    "collapse_navigation": False,
+    "navigation_depth": 2,
+}
+html_sidebars = {
+    "**": [
+        "searchbox.html",
+        "globaltoc.html",
+    ]
+}
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
@@ -209,22 +223,20 @@ cpp_id_attributes = [
 
 if on_rtd():
     build_doxygen()
-    #subprocess.call(
+    # subprocess.call(
     #    "cd ../cheatsheet; rst2pdf -s cheatsheet.style ../source/basic/cheatsheet.rst -o cheatsheet.pdf", shell=True
-    #)
+    # )
 else:
-    import sphinx_rtd_theme
     from sphinx.util import logging
 
     logger = logging.getLogger(__name__)
 
-    html_theme = "sphinx_rtd_theme"
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-
-    logger.info("single header build can be force build or skipped with the environment variable 'ALPAKA_SINGLE_HEADER=0|OFF|1|ON'")
+    logger.info(
+        "single header build can be force build or skipped with the environment variable 'ALPAKA_SINGLE_HEADER=0|OFF|1|ON'"
+    )
 
     if shutil.which("doxygen"):
-        if not "ALPAKA_NO_DOXYGEN" in os.environ:
+        if "ALPAKA_NO_DOXYGEN" not in os.environ:
             build_doxygen()
         logger.info("doxygen build can be skipped with the environment variable 'ALPAKA_NO_DOXYGEN=1'")
     else:
