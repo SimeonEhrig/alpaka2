@@ -7,9 +7,6 @@ After allocating buffers, the next step is moving or initializing data inside th
 One of the most commonly used memory operations is the copy operation, which copies data from one buffer to another.
 All memory operations support any dimension ``>=1``.
 
-In practice, these operations are the "plumbing" around nearly every example in this tutorial:
-copy an image to the device, clear a histogram buffer, move results back to the host, or prepare a Monte Carlo input/output pair before launching a kernel.
-
 - ``alpaka::onHost::memcpy()`` always works with the entire buffer unless you specify the extent. The extent defines the number of elements, **not** the size in bytes.
 
   .. literalinclude:: ../../snippets/example/041_memoryOperations.cpp
@@ -18,7 +15,6 @@ copy an image to the device, clear a histogram buffer, move results back to the 
     :end-before: END-TUTORIAL-memcpy
     :dedent:
 
-  The optional extent overload is a separate operation, not an implicit detail.
   The next snippet copies only the first four elements.
 
   .. literalinclude:: ../../snippets/example/041_memoryOperations.cpp
@@ -45,7 +41,9 @@ copy an image to the device, clear a histogram buffer, move results back to the 
     :end-before: END-TUTORIAL-memset
     :dedent:
 
-  If you pass an extent, only that many elements are affected.
+  The ``value_type`` is ``int``, and we want to set the bytes of the first four elements to 0.
+  On x86_64, an ``int`` has the size of 4 bytes. 
+  So in the example, the first 16 bytes of the buffer are set to 0.  
 
   .. literalinclude:: ../../snippets/example/041_memoryOperations.cpp
     :language: cpp
@@ -68,3 +66,4 @@ Complete Source File
 .. raw:: html
 
    </details>
+   <br/>
