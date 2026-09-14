@@ -107,7 +107,7 @@ namespace alpaka::onAcc
             {
                 using ExtentType = ALPAKA_TYPEOF(acc[layer::thread].idx());
 
-                using ValueType = typename ExtentType::type;
+                using ValueType = typename ExtentType::value_type;
                 constexpr uint32_t dim = ExtentType::dim();
 
                 return fillCVec<ValueType, dim, 0u>();
@@ -149,7 +149,7 @@ namespace alpaka::onAcc
             {
                 std::integral auto linearThreadsInBlock
                     = acc.getExtentsOf(onAcc::origin::block, onAcc::unit::threads).product();
-                using IndexType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(linearThreadsInBlock)>;
+                using IndexType = alpaka::GetValueType_t<ALPAKA_TYPEOF(linearThreadsInBlock)>;
                 return Vec{divCeil(linearThreadsInBlock, static_cast<IndexType>(T_Acc::getWarpSize()))};
             }
         };
@@ -207,7 +207,7 @@ namespace alpaka::onAcc
                 ALPAKA_TYPEOF(unit::threads)) const
             {
                 using ExtentType = ALPAKA_TYPEOF(acc[layer::thread].count());
-                using ValueType = typename ExtentType::type;
+                using ValueType = typename ExtentType::value_type;
                 constexpr uint32_t dim = ExtentType::dim();
 
                 return fillCVec<ValueType, dim, 1u>();
