@@ -78,7 +78,7 @@ def get_sanitizer_job(
             [
                 (HOST_COMPILER, compiler_name, compiler_version),
                 (DEVICE_COMPILER, compiler_name, compiler_version),
-                (CMAKE, "3.30.3"),
+                (CMAKE, "3.30.9"),
                 (UBUNTU, "24.04"),
                 (CXX_STANDARD, 20),
                 (BUILD_TYPE, CMAKE_DEBUG),
