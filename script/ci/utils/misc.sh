@@ -66,6 +66,8 @@ function version { echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4
 # Configure variables
 # - RETRY_CMD_MAX: number of retires (default 10)
 # - RETRY_CMD_WAIT: wait N seconds between two tries (default 1)
+# - RETRY_CONTINUE: If RETRY_CONTINUE=ON is set, the CI will continue instead stopping via
+#       exit_error().
 retry_cmd() {
     if [[ $# -lt 1 ]]; then
         exit_error "retry_cmd requires at least one argument."
@@ -90,7 +92,11 @@ retry_cmd() {
             echo_yellow "[WARNING]: Attempt #${i} to run '$*' failed"
             sleep "$wait_time"
         done
-        exit_error "run '$*' failed" "$result"
+        if [[ -z ${RETRY_CONTINUE+x} ]] || [[ "${RETRY_CONTINUE}" != "ON" ]]; then
+            exit_error "run '$*' failed" "$result"
+        else
+            return "$result"
+        fi
     )
 }
 
