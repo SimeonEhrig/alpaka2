@@ -72,14 +72,106 @@ After that, `job-generator` will access the source code in the local repository,
 
 New software versions can be added to [versions.py](./src/alpaka_bashi/versions.py).
 Depending on the software, new combinations are generated without any issues.
-Sometimes it is also necessary to add a new software relationship.
-For example, NVCC 13.0 only supports GCC up to version 15.
-If GCC 16 has already been added and CUDA 13.1 is to be added, the `job-generator` generates a job with NVCC 13.1 and GCC 16.
-However, NVCC 13.1 only supports GCC up to version 15.
-The CI job will fail.
-Therefore, a new software relationship must be added to the [get_alpaka_version_relation() function in the version.py file](./src/alpaka_bashi/versions.py), which restricts NVCC 13.1 to GCC 15.
 
-## Python Exception: covertable.exceptions.InvalidCondition
+In the case of an issue, there are two possibilities.
+
+1. There is already a filter rule that handles this case in principle, and the `verify()` function already removes the invalid parameter-value pairs. In this case, all that is needed is to add a new entry to the corresponding version dependency list. For example, the latest CUDA SDK only supports GCC up to version X.
+2. The new version creates an invalid relationship that is not yet covered by a filter rule.
+
+To determine which scenario applies, review the existing filter rules:
+
+- The [bashi filter-chain](https://github.com/alpaka-group/bashi/blob/main/src/bashi/filter_chain.py) shows you which filter stages are called in what order.
+- The first filter stages have been implemented in `bashi`. The following filters are used (the links may be outdated):
+    - [compiler filter](https://github.com/alpaka-group/bashi/blob/main/src/bashi/filter_compiler.py)
+    - [backend filter](https://github.com/alpaka-group/bashi/blob/main/src/bashi/filter_backend.py)
+    - [software dependencies filter](https://github.com/alpaka-group/bashi/blob/main/src/bashi/filter_software_dependency.py)
+- The [custom filter](./src/alpaka_bashi/alpaka_filter.py) is implemented here in the `alpaka-bashi` project.
+
+**Tip:** Most filter rules do not include a comment explaining how they work.
+Read the string in the function call `self.reason()` before the `return False` to get a summary of the filter rule.
+
+If a filter is available, read the [next section](#extend-an-existing-rule) to learn how to expand it.
+If no filter is available, please also read the [next section](#extend-an-existing-rule) to understand how filters work in general, and then read the [section that follows](#writing-a-new-rule).
+
+In all cases, [alpaka-validate](#alpaka-validate) is useful for checking whether your changes work.
+
+### Extend an existing Rule
+
+The key object for retrieving version relationships, such as which GCC version is supported by a specific CUDA version, is the [VersionRelation object](https://github.com/alpaka-group/bashi/blob/main/src/bashi/version/relation.py) object.
+Filter rules and the validation of generated combinations use this object to retrieve version relationships.
+The object’s constructor allows you to override version relationships.
+
+For example, we want to specify that CUDA 13.4 does not support GCC 16.
+First, we need to find the filter rule.
+The rule is `Rule: c5` in the [bashi compiler filter](https://github.com/alpaka-group/bashi/blob/main/src/bashi/filter_compiler.py).
+
+```python
+if row[DEVICE_COMPILER].name == NVCC:
+    if row[HOST_COMPILER].name == GCC:
+        # Rule: c5
+        # related to rule b10
+        # remove all unsupported nvcc gcc version combinations
+        # define which is the latest supported gcc compiler for a nvcc version
+
+        # if a nvcc version is not supported by bashi, assume that the version supports the
+        # latest gcc compiler version
+        if row[DEVICE_COMPILER].version <= self.version.get_nvcc_gcc_max_version()[0].nvcc:
+            # check the maximum supported gcc version for the given nvcc version
+            for nvcc_gcc_comb in self.version.get_nvcc_gcc_max_version():
+                if row[DEVICE_COMPILER].version >= nvcc_gcc_comb.nvcc:
+                    if row[HOST_COMPILER].version > nvcc_gcc_comb.host:
+                        self.reason(
+                            f"nvcc {row[DEVICE_COMPILER].version} "
+                            f"does not support gcc {row[HOST_COMPILER].version}",
+                        )
+                        return False
+                    break
+```
+
+The function call `self.version.get_nvcc_gcc_max_version()` accesses a member variable that stores the `VersionRelation` object.
+If we look at the implementation of `VersionRelation`, we see that we can set `nvcc_gcc_max_version` in the object's constructor.
+
+`alpaka-bashi` provides a function to modify the structure of the `VersionRelation` object.
+The function is `get_alpaka_version_relation()` in [version.py](./src/alpaka_bashi/versions.py).
+
+The following example shows how to extend the `nvcc_gcc_max_version` list.
+
+```python
+from bashi.version.dependencies.nvcc import NvccHostSupport, NVCC_GCC_MAX_VERSION
+
+# ...
+
+def get_alpaka_version_relation() -> bashi.VersionRelation:
+    """Returns:
+    bashi.VersionRelation: bashi.VersionRelation object with alpaka specific modifications.
+    """
+
+    # we use NVCC_GCC_MAX_VERSION as base to avoid redefining relations for other CUDA versions
+    # define the maximum supported gcc version for a specific nvcc version
+    nvcc_gcc_max_version = NVCC_GCC_MAX_VERSION + [
+        NvccHostSupport("13.4", "15"),
+    ]
+
+    return bashi.VersionRelation(
+        nvcc_gcc_max_version=nvcc_gcc_max_version,
+    )
+```
+
+The `verify()` functions also use the `VersionRelation` object to retrieve the software relationships.
+As a result, the list of invalid parameter-value-tuples is automatically expanded.
+In our case, `verify()` checks that no combination contains the pair `device compiler nvcc 13.4 + host compiler gcc 16`.
+
+### Writing a new Rule
+
+To add a new restriction for software dependencies, you need to follow a few steps. First, you must add a new filter rule to the [alpaka_filter.py](./src/alpaka_bashi/alpaka_filter.py) file.
+Please review the existing filter rules to understand how they work.
+`bashi` also provides a [guide](https://github.com/alpaka-group/bashi/blob/main/docs/rules.md) on implementing filter rules.
+
+Once the filter rule is implemented and does not raise an exception of type `covertable.exceptions.InvalidCondition` (see the next section), the `verify()` function should fail and indicate that an invalid pair was found.
+Therefore, the `verify()` function in the [verify.py](./src/alpaka_bashi/verify.py) file must be extended.
+Here, too, the [bashi implementation](https://github.com/alpaka-group/bashi/tree/main/src/bashi/result_modules) can serve as a guide.
+
+### Python Exception: covertable.exceptions.InvalidCondition
 
 Sometimes, when running the `job-generator`, an exception of type `covertable.exceptions.InvalidCondition` may be triggered when a new software version is added.
 This can happen if a filter rule or a software rule is missing.
