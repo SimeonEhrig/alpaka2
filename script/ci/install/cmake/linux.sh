@@ -30,9 +30,14 @@ else
 
         _cmake_tmp_dir=$(mktemp -d)
 
-        ci_wget \
+        if ! RETRY_CONTINUE=ON ci_wget \
             https://cmake.org/files/v"${_cmake_ver_major}"."${_cmake_ver_minor}"/"${_cmake_pkg_file_name}" \
-            "${_cmake_tmp_dir}/${_cmake_pkg_file_name}"
+            "${_cmake_tmp_dir}/${_cmake_pkg_file_name}"; then
+            echo_yellow "[WARNING]: use github.com mirror to download CMake"
+            ci_wget "https://github.com/Kitware/CMake/releases/download/v${APCI_CMAKE}/${_cmake_pkg_file_name}" \
+                "${_cmake_tmp_dir}/${_cmake_pkg_file_name}"
+        fi
+
         echo_run tar -xzf "${_cmake_tmp_dir}/${_cmake_pkg_file_name}" -C "${_cmake_tmp_dir}"
 
         mkdir -p "${_cmake_install_path}"
