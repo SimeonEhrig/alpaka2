@@ -94,9 +94,11 @@ repos:
           "--disable", "import-error"
         ]
       # source: https://github.com/pre-commit/pre-commit/issues/1470#issuecomment-634381955
+      # exclude the tests from the linters -> this would be overengineered
       exclude: |
           (?x)(
-              ^docs/
+              ^docs/|
+              ^script/job_generator/tests/
           )
 -   repo: https://github.com/pre-commit/mirrors-mypy
     rev: 'v2.3.0'
@@ -104,5 +106,6 @@ repos:
     - id: mypy
       exclude: |
           (?x)(
-              ^docs/
+              ^docs/|
+              ^script/job_generator/tests/
           )
