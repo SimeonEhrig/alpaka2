@@ -93,18 +93,21 @@ namespace alpaka::onHost
                 [[maybe_unused]] KernelBundle<T_KernelFn, T_Args...> const& kernelBundle) const
             {
                 if constexpr(requires {
-                                 BlockDynSharedMemBytes<T_KernelFn, T_Spec>{kernelBundle.m_kernelFn, spec}(
+                                 BlockDynSharedMemBytes<T_KernelFn, T_Spec>{kernelBundle.getKernelFn(), spec}(
                                      std::declval<remove_restrict_t<std::decay_t<T_Args>>>()...);
                              })
                 {
                     return alpaka::apply(
                         [&](auto const&... args)
-                        { return BlockDynSharedMemBytes<T_KernelFn, T_Spec>{kernelBundle.m_kernelFn, spec}(args...); },
-                        kernelBundle.m_args);
+                        {
+                            return BlockDynSharedMemBytes<T_KernelFn, T_Spec>{kernelBundle.getKernelFn(), spec}(
+                                args...);
+                        },
+                        kernelBundle.getArgs());
                 }
                 else
                 {
-                    return kernelBundle.m_kernelFn.dynSharedMemBytes;
+                    return kernelBundle.getKernelFn().dynSharedMemBytes;
                 }
             }
         };

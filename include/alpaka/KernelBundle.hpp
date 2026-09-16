@@ -138,6 +138,17 @@ namespace alpaka
                 m_args);
         }
 
+        [[nodiscard]] constexpr auto getKernelFn() const -> KernelFn const&
+        {
+            return m_kernelFn;
+        }
+
+        [[nodiscard]] constexpr auto getArgs() const -> ArgTuple const&
+        {
+            return m_args;
+        }
+
+    private:
         KernelFn m_kernelFn;
         // Store the argument types without const and reference
         ArgTuple m_args;
