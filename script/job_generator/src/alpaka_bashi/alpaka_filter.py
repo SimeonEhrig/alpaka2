@@ -5,6 +5,9 @@ Custom filter for alpaka specific filter rules.
 """
 
 import bashi
+import packaging.version
+from bashi.globals import ALPAKA_ACC_GPU_CUDA_ENABLE, CLANG, DEVICE_COMPILER, HOST_COMPILER, NVCC
+from bashi.results import OFF_VER
 
 from alpaka_bashi.versions import get_allowed_backend_combinations, get_used_backends
 
@@ -29,6 +32,50 @@ def check_only_valid_backend_combinations_a1(row: bashi.BashiRow, alpaka_filter:
     return True
 
 
+def check_clang_host_compiler_supported_cuda_sdk_a2(row: bashi.BashiRow, alpaka_filter: "AlpakaFilter") -> bool:
+    """
+    Clang as nvcc host compiler is only working since CUDA 13.3.
+
+    Args:
+        row (bashi.BashiRow): parameter-value-tuple to verify.
+        alpaka_filter (AlpakaFilter): alpaka filter
+
+    Returns:
+        bool: True if passed.
+    """
+    if (
+        row[HOST_COMPILER].name == CLANG
+        and row[ALPAKA_ACC_GPU_CUDA_ENABLE].version > OFF_VER
+        and row[ALPAKA_ACC_GPU_CUDA_ENABLE].version < packaging.version.parse("13.3")
+    ):
+        alpaka_filter.reason("Clang as nvcc host compiler is only working since CUDA 13.3.")
+        return False
+
+    return True
+
+
+def check_clang_host_compiler_supported_nvcc_a3(row: bashi.BashiRow, alpaka_filter: "AlpakaFilter") -> bool:
+    """
+    Clang as nvcc host compiler is only working since CUDA 13.3.
+
+    Args:
+        row (bashi.BashiRow): parameter-value-tuple to verify.
+        alpaka_filter (AlpakaFilter): alpaka filter
+
+    Returns:
+        bool: True if passed.
+    """
+    if (
+        row[HOST_COMPILER].name == CLANG
+        and row[DEVICE_COMPILER].name == NVCC
+        and row[DEVICE_COMPILER].version < packaging.version.parse("13.3")
+    ):
+        alpaka_filter.reason("The Clang host compiler is only working since nvcc 13.3.")
+        return False
+
+    return True
+
+
 # pylint: disable=too-few-public-methods
 class AlpakaFilter(bashi.FilterBase):
     """Alpaka specific filter rules."""
@@ -46,4 +93,8 @@ class AlpakaFilter(bashi.FilterBase):
             bool: True, if parameter-value-tuple is valid.
         """
 
-        return check_only_valid_backend_combinations_a1(row, self)
+        return (
+            check_only_valid_backend_combinations_a1(row, self)
+            and check_clang_host_compiler_supported_cuda_sdk_a2(row, self)
+            and check_clang_host_compiler_supported_nvcc_a3(row, self)
+        )
