@@ -1,0 +1,256 @@
+"Util functions for unit tests."
+
+import unittest
+from collections import OrderedDict
+from collections.abc import Callable
+from itertools import chain
+from typing import TypeAlias, cast
+
+import bashi
+import bashi.utils
+import packaging.version
+from bashi.types import ParameterValuePair
+from typeguard import typechecked
+
+ParsableVersion: TypeAlias = str | int | float | bashi.ValueVersion
+CompilerParsableParameterValue: TypeAlias = tuple[bashi.Parameter, bashi.ValueName, ParsableVersion]
+DefaultParsableParameterValue: TypeAlias = tuple[bashi.Parameter, ParsableVersion]
+ParsableParameterValue: TypeAlias = DefaultParsableParameterValue | CompilerParsableParameterValue
+
+
+def parse_param_val(
+    param_val: tuple[bashi.ValueName, ParsableVersion],
+) -> bashi.ParameterValue:
+    """Parse a single tuple to a parameter-values.
+
+    Args:
+        param_val (tuple[ValueName, ParsableVersion]): tuple to parse
+
+    Returns:
+        ParameterValue: parsed ParameterValue
+    """
+    val_name, val_version = param_val
+    if isinstance(val_version, bashi.ValueVersion):
+        parsed_version = val_version
+    else:
+        parsed_version = packaging.version.parse(str(val_version))
+    return bashi.ParameterValue(val_name, parsed_version)
+
+
+def parse_param_vals(
+    param_vals: list[tuple[bashi.ValueName, ParsableVersion]],
+) -> list[bashi.ParameterValue]:
+    """Parse a list of tuples to a list of parameter-values.
+
+    Args:
+        param_vals (list[tuple[ValueName, ParsableVersion]]): list to parse
+
+    Returns:
+        list[ParameterValue]: list of parameter-values
+    """
+    parsed_list: list[bashi.ParameterValue] = [parse_param_val(param_val) for param_val in param_vals]
+
+    return parsed_list
+
+
+def parse_param_value_tuples(input_list: list[ParsableParameterValue]) -> bashi.ParameterValueTuple:
+    """Parse a list of tuples to a parameter-value-tuple.
+
+    Args:
+        input_list (list[tuple[ParsableParameterValue, ParsableParameterValue]]):
+            e.g.:
+            parse_param_value_tuples(
+            [
+                (HOST_COMPILER, GCC, 12), (UBUNTU, 22.04), (DEVICE_COMPILER, GCC, 12),
+                (CMAKE, "3.19"), (ALPAKA_ACC_GPU_CUDA_ENABLE, "10.1"),
+                (ALPAKA_ACC_ONEAPI_CPU_ENABLE, ON)
+            ])
+
+    Raises:
+        TypeError: If a host or device compiler has no ValueName and ValueVersion
+        TypeError: If a parameter which is not host or device compiler has no ValueVersion
+
+    Returns:
+        bashi.ParameterValuetuple: parameter-value-tuple
+    """
+    row: bashi.ParameterValueTuple = OrderedDict()
+    for entry in input_list:
+        param_name: bashi.Parameter = entry[0]
+        if param_name in (bashi.HOST_COMPILER, bashi.DEVICE_COMPILER):
+            if len(entry) < 3:
+                raise TypeError(f"Parameter is {param_name}. Has not 3 values: {entry}")
+            value_name = entry[1]
+            value_version = entry[2]
+        else:
+            if len(entry) < 2:
+                raise TypeError(f"Has not 2 values: {entry}")
+            value_name = param_name
+            value_version = entry[1]
+        row[param_name] = parse_param_val((value_name, value_version))
+
+    return row
+
+
+def parse_bashi_row(input_list: list[ParsableParameterValue]) -> bashi.BashiRow:
+    """Parse a list of tuples to a BashiRow. See parse_param_value_tuples()
+
+    Returns:
+        bashi.BashiRow: parameter-value-tuple
+    """
+
+    return bashi.BashiRow(parse_param_value_tuples(input_list))
+
+
+RegularParsableParameterValue: TypeAlias = tuple[bashi.Parameter, bashi.ValueName, ParsableVersion]
+
+
+def parse_expected_val_pairs(
+    input_list: list[tuple[ParsableParameterValue, ParsableParameterValue]],
+) -> list[bashi.ParameterValuePair]:
+    """Parse list of expected parameter-values to the correct type.
+
+    Args:
+        input_list (list[tuple[ParsableParameterValue, ParsableParameterValue]]):
+            e.g.:
+            parse_expected_val_pairs(
+            [
+                ((HOST_COMPILER, GCC, 12), (UBUNTU, 22.04)),
+                ((HOST_COMPILER, CLANG_CUDA, 14), (CMAKE, "3.19")),
+                ((UBUNTU, "20.04"), (ALPAKA_ACC_GPU_CUDA_ENABLE, "10.1")),
+                ((UBUNTU, "22.04"), (ALPAKA_ACC_GPU_CUDA_ENABLE, "10.1")),
+            ])
+
+    Returns:
+        list[ParameterValuePair]: Parsed parameter-type list
+    """
+    expected_val_pairs: list[bashi.ParameterValuePair] = []
+    for pair_number, input_pair in enumerate(input_list):
+        regular_entry_pair: list[RegularParsableParameterValue] = []
+        for entry_number, input_entry in enumerate(input_pair):
+            if input_entry[0] in (bashi.HOST_COMPILER, bashi.DEVICE_COMPILER):
+                compiler_input_entry = cast(CompilerParsableParameterValue, input_entry)
+                if len(compiler_input_entry) != 3:
+                    raise ValueError(
+                        f"input_list[{pair_number}][{entry_number}] {compiler_input_entry}\n"
+                        "First value is HOST_COMPILER or DEVICE_COMPILER.\n"
+                        "Therefore the tuple needs to contain three entries:"
+                        "\n(<HOST_COMPILER|DEVICE_COMPILER>, <value-name>, <value-version>)"
+                    )
+                regular_entry_pair.append(compiler_input_entry)
+            else:
+                if len(input_entry) != 2:
+                    raise ValueError(
+                        f"input_list[{pair_number}][{entry_number}] {input_entry}\n"
+                        "The tuple needs to contain two entries:"
+                        "\n(<parameter>, <value-version>)"
+                    )
+                default_input_entry = cast(DefaultParsableParameterValue, input_entry)
+                regular_entry_pair.append((default_input_entry[0], default_input_entry[0], default_input_entry[1]))
+
+        expected_val_pairs.append(bashi.utils.create_parameter_value_pair(*chain(*regular_entry_pair)))
+
+    return expected_val_pairs
+
+
+def create_diff_parameter_value_pairs(
+    given_result: list[ParameterValuePair], expected_result: list[ParameterValuePair]
+) -> str:
+    """Returns a string for a readable output, if two lists of parameter-value-pairs are different.
+
+    Args:
+        given_result (list[ParameterValuePair]): Results from the test
+        expected_result (list[ParameterValuePair]): Expected results
+
+    Returns:
+        str: Output string
+    """
+    output = f"\ngiven ({len(given_result)} elements):\n"
+    for g_result in sorted(given_result):
+        output += (
+            f"  {g_result.first.parameter}="
+            f"{g_result.first.parameterValue.name} {g_result.first.parameterValue.version} + "
+            f"{g_result.second.parameter}="
+            f"{g_result.second.parameterValue.name} {g_result.second.parameterValue.version}\n"
+        )
+
+    output += f"expected ({len(expected_result)} elements):\n"
+
+    for e_result in sorted(expected_result):
+        output += (
+            f"  {e_result.first.parameter}="
+            f"{e_result.first.parameterValue.name} {e_result.first.parameterValue.version} + "
+            f"{e_result.second.parameter}="
+            f"{e_result.second.parameterValue.name} {e_result.second.parameterValue.version}\n"
+        )
+
+    return output
+
+
+RemoveParameterValuePairsFunctor: TypeAlias = Callable[[list[ParameterValuePair], list[ParameterValuePair]], None]
+RemoveParameterValuePairsRuntimeFunctor: TypeAlias = Callable[
+    [list[ParameterValuePair], list[ParameterValuePair], dict[str, Callable[..., bool]]],
+    None,
+]
+
+
+@typechecked
+def default_remove_test(
+    function: RemoveParameterValuePairsFunctor | RemoveParameterValuePairsRuntimeFunctor,
+    test_parameter_value_pairs: list[ParameterValuePair],
+    expected_results: list[ParameterValuePair],
+    test_self: unittest.TestCase,
+    version_relation: bashi.VersionRelation | None = None,
+    runtime_infos: dict[str, Callable[..., bool]] | None = None,
+):
+    """Test template for sub-functions of the get_expected_bashi_parameter_value_pairs() function.
+    Takes a function, an input parameter-value-pair list and a list of expected
+    parameter-value-pairs and compares the result of the function with the expected result. Also
+    checks the unexpected result.
+
+    Args:
+        function (RemoveParameterValuePairsFunctor | RemoveParameterValuePairsRuntimeFunctor):
+            Function to be tested
+        test_parameter_value_pairs (list[ParameterValuePair]): Parameter-value-pairs list to filter
+        expected_results (list[ParameterValuePair]): Expected result list after the function was
+            applied on the input list
+        test_self (unittest.TestCase): The function needs to be called in an unittest function. To
+            allow to use the features of the unittest module, the caller function needs to pass the
+            self parameter.
+        runtime_infos (Optional[dict[str, Callable[..., bool]]]): Runtime infos are filter functions
+            which are generated for a given input parameter-value-matrix during runtime. Some of the
+            remove expected parameter-value-pairs function use it.
+
+    """
+    expected_results.sort()
+    unexpected_results: list[ParameterValuePair] = sorted(list(set(test_parameter_value_pairs) - set(expected_results)))
+
+    unexpected_test_param_value_pairs: list[ParameterValuePair] = []
+    if version_relation is None:
+        if runtime_infos is None:
+            function(test_parameter_value_pairs, unexpected_test_param_value_pairs)
+        else:
+            function(test_parameter_value_pairs, unexpected_test_param_value_pairs, runtime_infos)
+    else:
+        if runtime_infos is None:
+            function(test_parameter_value_pairs, unexpected_test_param_value_pairs, version_relation)
+        else:
+            function(
+                test_parameter_value_pairs,
+                unexpected_test_param_value_pairs,
+                version_relation,
+                runtime_infos,
+            )
+
+    test_parameter_value_pairs.sort()
+    unexpected_test_param_value_pairs.sort()
+
+    test_self.assertEqual(
+        test_parameter_value_pairs,
+        expected_results,
+        create_diff_parameter_value_pairs(test_parameter_value_pairs, expected_results),
+    )
+    test_self.assertEqual(
+        unexpected_test_param_value_pairs,
+        unexpected_results,
+        create_diff_parameter_value_pairs(unexpected_test_param_value_pairs, unexpected_results),
+    )

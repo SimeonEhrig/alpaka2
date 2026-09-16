@@ -52,3 +52,20 @@ jobs:
         - name: Run pylint on job-generator and alpaka-validate
           run: |
             pylint ${GITHUB_WORKSPACE}/script/job_generator/src/apps
+
+    unit-tests:
+      name: run unit tests
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v7
+        - name: Set up Python
+          uses: actions/setup-python@v7
+          with:
+            python-version: "3.13"
+            architecture: x64
+        - name: Install alpaka-bashi
+          run: |
+            pip install ./script/job_generator
+        - name: Run alpaka-bashi test
+          run: |
+            python -m unittest discover -s ./script/job_generator/tests -p "*.py"
