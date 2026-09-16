@@ -13,10 +13,12 @@ from bashi.globals import (
     ALPAKA_ACC_GPU_HIP_ENABLE,
     DEVICE_COMPILER,
     GCC,
+    HIPCC,
     HOST_COMPILER,
     OFF_VER,
     UBUNTU,
 )
+from packaging.version import Version
 from typeguard import typechecked
 
 from alpaka_bashi.utils import print_warn
@@ -25,6 +27,16 @@ GITLAB_IMAGE_CACHE: list[str] | None = None
 
 # is used to display missing image warning one time
 image_warning_cache: list[str] = []
+
+
+@typechecked
+def get_custom_image_name(combination: bashi.Combination) -> str:
+    """Return a custom CI image for combinations not covered by the alpaka CI registry."""
+
+    if combination[DEVICE_COMPILER].name == HIPCC and combination[DEVICE_COMPILER].version == Version("10.0"):
+        return "rocm/dev-ubuntu-24.04:10.0.0-full"
+
+    return ""
 
 
 @typechecked
@@ -137,6 +149,10 @@ def set_image(
         job_body (Dict[str, Any]): GitLab CI test job body yaml
         combination (bashi.Combination): combination
     """
+    if custom_image_name := get_custom_image_name(combination):
+        job_body["image"] = custom_image_name
+        return
+
     image_name = get_image_name(combination, container_version)
 
     if image_check:
