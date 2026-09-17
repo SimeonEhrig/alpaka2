@@ -93,18 +93,39 @@ namespace alpaka::onHost
                 [[maybe_unused]] KernelBundle<T_KernelFn, T_Args...> const& kernelBundle) const
             {
                 if constexpr(requires {
-                                 BlockDynSharedMemBytes<T_KernelFn, T_Spec>{kernelBundle.m_kernelFn, spec}(
+                                 BlockDynSharedMemBytes<T_KernelFn, T_Spec>{kernelBundle.getKernelFn(), spec}(
                                      std::declval<remove_restrict_t<std::decay_t<T_Args>>>()...);
                              })
                 {
                     return alpaka::apply(
                         [&](auto const&... args)
-                        { return BlockDynSharedMemBytes<T_KernelFn, T_Spec>{kernelBundle.m_kernelFn, spec}(args...); },
-                        kernelBundle.m_args);
+                        {
+                            return BlockDynSharedMemBytes<T_KernelFn, T_Spec>{kernelBundle.getKernelFn(), spec}(
+                                args...);
+                        },
+                        kernelBundle.getArgs());
                 }
                 else
                 {
-                    return kernelBundle.m_kernelFn.dynSharedMemBytes;
+                    /* An compiler bug in amd-clang does not track, if dynSharedMemBytes used in cuda style kernel
+                     * call. Therefore a nodiscard warning is thrown.
+                     *
+                     * uint32_t blockDynSharedMemBytes = onHost::getDynSharedMemBytes(threadSpec, kernelBundle);
+                     * kernelName<<<..., blockDynSharedMemBytes>>>();
+                     *
+                     * Using [[maybe_unused]] does not solve the problem. The warning only appears if the user
+                     * configures the shared memory size with the variable dynSharedMemBytes.
+                     *
+                     * @todo: remove me, if HIP 7.0 and 7.1 is not supported anymore
+                     */
+#if ALPAKA_LANG_HIP >= ALPAKA_VERSION_NUMBER(7, 0, 0) && ALPAKA_LANG_HIP <= ALPAKA_VERSION_NUMBER(7, 1, 0)
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wunused-result"
+#endif
+                    return kernelBundle.getKernelFn().dynSharedMemBytes;
+#if ALPAKA_LANG_HIP >= ALPAKA_VERSION_NUMBER(7, 0, 0) && ALPAKA_LANG_HIP <= ALPAKA_VERSION_NUMBER(7, 1, 0)
+#    pragma clang diagnostic pop
+#endif
                 }
             }
         };
