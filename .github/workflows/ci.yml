@@ -81,6 +81,9 @@ jobs:
               env : {APCI_DEVICE_COMPILER : nvcc@13.2, APCI_HOST_COMPILER : gcc@13, APCI_CMAKE : 3.28.3, APCI_CUDA: 13.2, APCI_RUN_CTEST: OFF} }
           - { compiler: nvcc, version: "", cuda: "13.3", hip: "no", container: "nvidia/cuda:13.3.0-devel-ubuntu24.04",
               env: { APCI_DEVICE_COMPILER: nvcc@13.3, APCI_HOST_COMPILER : gcc@13, APCI_CMAKE : 3.28.3, APCI_CUDA: 13.3, APCI_RUN_CTEST: OFF } }
+          # nvcc + clang
+          - { compiler: nvcc, version: "", cuda: "13.3", hip: "no", container: "nvidia/cuda:13.3.0-devel-ubuntu24.04",
+              env: { APCI_DEVICE_COMPILER: nvcc@13.3, APCI_HOST_COMPILER : clang@21, APCI_CMAKE : 3.28.3, APCI_CUDA: 13.3, APCI_RUN_CTEST: OFF } }
           # clang-cuda (device compile with clang)
           - { compiler: clang, version: "20", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04",
               env : {APCI_DEVICE_COMPILER : clang@20, APCI_CMAKE : 3.28.3, APCI_CUDA: 12.8, APCI_RUN_CTEST: OFF} }
@@ -162,7 +165,7 @@ jobs:
 
       - name: Install Clang
         shell: bash
-        if: matrix.config.compiler == 'clang' && matrix.config.hip == 'no'
+        if: (matrix.config.compiler == 'clang' || matrix.config.compiler == 'nvcc') && matrix.config.hip == 'no'
         run: "${APCI_ALPAKA_ROOT}/script/ci/install/clang.sh"
 
       - name: Install CUDA
