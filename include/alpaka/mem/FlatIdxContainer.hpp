@@ -223,7 +223,7 @@ namespace alpaka::onAcc
                 auto strideMD = m_idxRange.getStrideMd()[selectedDims];
                 auto extentMD = divCeil(m_idxRange.distance()[selectedDims], strideMD);
 
-                auto threadCountMD = m_threadSpace.m_threadCount[selectedDims];
+                auto threadCountMD = m_threadSpace.getThreadCount()[selectedDims];
 
                 auto numWorkerSlots = threadCountMD.product();
                 auto linearSlotIdx = linearize(threadCountMD, threadIdx[selectedDims]);

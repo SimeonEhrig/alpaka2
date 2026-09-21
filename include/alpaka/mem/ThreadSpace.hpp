@@ -94,10 +94,21 @@ namespace alpaka
             return ThreadSpace<ALPAKA_TYPEOF(threadIndex), ALPAKA_TYPEOF(numThreads)>{threadIndex, numThreads};
         }
 
-        T_ThreadIdx m_threadIdx;
-        T_ThreadCount m_threadCount;
+        [[nodiscard]] constexpr auto getThreadIdx() const -> T_ThreadIdx
+        {
+            return m_threadIdx;
+        }
+
+        [[nodiscard]] constexpr auto getThreadCount() const -> T_ThreadCount
+        {
+            return m_threadCount;
+        }
 
         using value_type = typename T_ThreadIdx::value_type;
+
+    private:
+        T_ThreadIdx m_threadIdx;
+        T_ThreadCount m_threadCount;
     };
 
     namespace internal
@@ -109,7 +120,7 @@ namespace alpaka
                 requires std::convertible_to<typename T_ThreadIdx::value_type, T_To>
                          && (!std::same_as<T_To, typename T_ThreadIdx::value_type>)
             {
-                return ThreadSpace{pCast<T_To>(input.m_threadIdx), pCast<T_To>(input.m_threadCount)};
+                return ThreadSpace{pCast<T_To>(input.getThreadIdx()), pCast<T_To>(input.getThreadCount())};
             }
 
             constexpr decltype(auto) operator()(auto&& input) const
@@ -123,25 +134,25 @@ namespace alpaka
     template<std::size_t I, typename T_ThreadIdx, typename T_ThreadCount>
     constexpr auto get(alpaka::ThreadSpace<T_ThreadIdx, T_ThreadCount> const& v) requires(I == 0u)
     {
-        return v.m_threadIdx;
+        return v.getThreadIdx();
     }
 
     template<std::size_t I, typename T_ThreadIdx, typename T_ThreadCount>
     constexpr auto& get(alpaka::ThreadSpace<T_ThreadIdx, T_ThreadCount>& v) requires(I == 0u)
     {
-        return v.m_threadIdx;
+        return v.getThreadIdx();
     }
 
     template<std::size_t I, typename T_ThreadIdx, typename T_ThreadCount>
     constexpr auto get(alpaka::ThreadSpace<T_ThreadIdx, T_ThreadCount> const& v) requires(I == 1u)
     {
-        return v.m_threadCount;
+        return v.getThreadCount();
     }
 
     template<std::size_t I, typename T_ThreadIdx, typename T_ThreadCount>
     constexpr auto& get(alpaka::ThreadSpace<T_ThreadIdx, T_ThreadCount>& v) requires(I == 1u)
     {
-        return v.m_threadCount;
+        return v.getThreadCount();
     }
 
 } // namespace alpaka
