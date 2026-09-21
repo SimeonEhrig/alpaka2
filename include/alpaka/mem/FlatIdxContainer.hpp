@@ -201,26 +201,26 @@ namespace alpaka::onAcc
 
             if constexpr(std::is_same_v<T_IdxMapperFn, layout::Strided>)
             {
-                auto groupOffset = threadIdx * m_idxRange.m_stride;
+                auto groupOffset = threadIdx * m_idxRange.getStrideVec();
                 groupOffset.ref(selectedDims) -= groupOffset[selectedDims];
 
-                auto begin = m_idxRange.m_begin + groupOffset;
+                auto begin = m_idxRange.getBeginVec() + groupOffset;
 
                 auto linearCurrent = linearize(numThreads[selectedDims], threadIdx[selectedDims]);
                 auto linearStride = numThreads[selectedDims].product();
-                auto strideMD = m_idxRange.m_stride[selectedDims];
+                auto strideMD = m_idxRange.getStrideVec()[selectedDims];
                 auto extentMD = divCeil(m_idxRange.distance()[selectedDims], strideMD);
 
                 return const_iterator(begin, linearCurrent, linearStride, extentMD.product(), extentMD, strideMD);
             }
             else if constexpr(std::is_same_v<T_IdxMapperFn, layout::Contiguous>)
             {
-                auto groupOffset = threadIdx * m_idxRange.m_stride;
+                auto groupOffset = threadIdx * m_idxRange.getStrideVec();
                 groupOffset.ref(selectedDims) -= groupOffset[selectedDims];
 
-                auto begin = m_idxRange.m_begin + groupOffset;
+                auto begin = m_idxRange.getBeginVec() + groupOffset;
 
-                auto strideMD = m_idxRange.m_stride[selectedDims];
+                auto strideMD = m_idxRange.getStrideVec()[selectedDims];
                 auto extentMD = divCeil(m_idxRange.distance()[selectedDims], strideMD);
 
                 auto threadCountMD = m_threadSpace.m_threadCount[selectedDims];
@@ -257,12 +257,12 @@ namespace alpaka::onAcc
 
             if constexpr(std::is_same_v<T_IdxMapperFn, layout::Strided>)
             {
-                auto extentMD = divCeil(m_idxRange.distance()[selectedDims], m_idxRange.m_stride[selectedDims]);
+                auto extentMD = divCeil(m_idxRange.distance()[selectedDims], m_idxRange.getStrideVec()[selectedDims]);
                 return const_iterator_end(extentMD.product());
             }
             else if constexpr(std::is_same_v<T_IdxMapperFn, layout::Contiguous>)
             {
-                auto strideMD = m_idxRange.m_stride[selectedDims];
+                auto strideMD = m_idxRange.getStrideVec()[selectedDims];
                 auto extentMD = divCeil(m_idxRange.distance()[selectedDims], strideMD);
 
                 auto numWorkerSlots = numThreads[selectedDims].product();
