@@ -371,7 +371,7 @@ namespace alpaka::onAcc::internal
             auto const workGroup = asParent().getWorkGroup();
 
             // we SIMDfy only over the fast moving dimension (columns of memory)
-            auto const wSize = workGroup.size(acc).back();
+            auto const wSize = workGroup.getThreadCount(acc).back();
 
             /* Number of data elements processed per functor call. */
             auto const numElementsPerFnCall = T_simdWidth * T_numSimdPerFnCall;
@@ -410,8 +410,8 @@ namespace alpaka::onAcc::internal
                  */
                 // build a worker group with slow-moving dimension threads for the outer loop
                 using index_type = typename IdxType::value_type;
-                auto wIdx = workGroup.idx(acc).rAssign(index_type{0});
-                auto wSize = workGroup.size(acc).rAssign(index_type{1});
+                auto wIdx = workGroup.getThreadIdx(acc).rAssign(index_type{0});
+                auto wSize = workGroup.getThreadCount(acc).rAssign(index_type{1});
                 auto domSize = domainSize.rAssign(index_type{1});
 
                 auto wOuter = WorkerGroup{wIdx, wSize};
@@ -424,8 +424,8 @@ namespace alpaka::onAcc::internal
                         asParent().getIdxLayoutPolicy()))
                 {
                     // build a worker group with fast-moving dimension threads for the inner loop
-                    auto wIdxInner = ALPAKA_TYPEOF(domainSize)::fill(0).rAssign(workGroup.idx(acc).back());
-                    auto wSizeInner = ALPAKA_TYPEOF(domainSize)::fill(1).rAssign(workGroup.size(acc).back());
+                    auto wIdxInner = ALPAKA_TYPEOF(domainSize)::fill(0).rAssign(workGroup.getThreadIdx(acc).back());
+                    auto wSizeInner = ALPAKA_TYPEOF(domainSize)::fill(1).rAssign(workGroup.getThreadCount(acc).back());
                     auto wInner = WorkerGroup{wIdxInner, wSizeInner};
 
                     // iterate over the fast-moving dimension only

@@ -42,14 +42,14 @@ namespace alpaka::onAcc
         {
         }
 
-        constexpr auto size(auto const& acc) const
+        [[nodiscard]] constexpr auto getThreadCount(auto const& acc) const
         {
-            return getThreadSpace(acc).size();
+            return getThreadSpace(acc).getThreadCount();
         }
 
-        constexpr auto idx(auto const& acc) const
+        [[nodiscard]] constexpr auto getThreadIdx(auto const& acc) const
         {
-            return getThreadSpace(acc).idx();
+            return getThreadSpace(acc).getThreadIdx();
         }
 
     private:

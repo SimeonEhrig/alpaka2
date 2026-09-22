@@ -41,16 +41,6 @@ namespace alpaka
             return stream.str();
         }
 
-        constexpr auto size() const
-        {
-            return m_threadCount;
-        }
-
-        constexpr auto idx() const
-        {
-            return m_threadIdx;
-        }
-
         template<concepts::CVector T_CSelect>
         constexpr ThreadSpace mapTo(T_CSelect selection) const requires(T_ThreadIdx::dim() <= T_CSelect::dim())
         {
