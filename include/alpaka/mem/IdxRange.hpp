@@ -125,11 +125,32 @@ namespace alpaka
             return stream.str();
         }
 
+        /** Return the begin position of the range as vector coordinate.
+         * Allows not to iterate of the IdxRange. Use begin() instead of. **/
+        [[nodiscard]] constexpr auto getBeginMd() const -> T_Begin
+        {
+            return m_begin;
+        }
+
+        /** Return the end position of the range as vector coordinate.
+         * Allows not to iterate of the IdxRange. Use end() instead of. **/
+        [[nodiscard]] constexpr auto getEndMd() const -> T_End
+        {
+            return m_end;
+        }
+
+        /** Return the stride of the range. **/
+        [[nodiscard]] constexpr auto getStrideMd() const -> T_Stride
+        {
+            return m_stride;
+        }
+
+        using value_type = typename T_Begin::value_type;
+
+    private:
         T_Begin m_begin;
         T_End m_end;
         T_Stride m_stride;
-
-        using value_type = typename T_Begin::value_type;
     };
 
     template<uint32_t T_dim, alpaka::concepts::Vector T_LowHaloVec, alpaka::concepts::Vector T_UpHaloVec>
@@ -144,16 +165,16 @@ namespace alpaka
             switch(boundaryDir.data[i])
             {
             case BoundaryType::LOWER:
-                m_begin[i] = range.m_begin[i];
-                m_end[i] = range.m_begin[i] + boundaryDir.lowerHaloSize[i];
+                m_begin[i] = range.getBeginMd()[i];
+                m_end[i] = range.getBeginMd()[i] + boundaryDir.lowerHaloSize[i];
                 break;
             case BoundaryType::UPPER:
-                m_begin[i] = range.m_end[i] - boundaryDir.upperHaloSize[i];
-                m_end[i] = range.m_end[i];
+                m_begin[i] = range.getEndMd()[i] - boundaryDir.upperHaloSize[i];
+                m_end[i] = range.getEndMd()[i];
                 break;
             case BoundaryType::MIDDLE:
-                m_begin[i] = range.m_begin[i] + boundaryDir.lowerHaloSize[i];
-                m_end[i] = range.m_end[i] - boundaryDir.upperHaloSize[i];
+                m_begin[i] = range.getBeginMd()[i] + boundaryDir.lowerHaloSize[i];
+                m_end[i] = range.getEndMd()[i] - boundaryDir.upperHaloSize[i];
                 break;
             case BoundaryType::OOB:
                 [[fallthrough]];
@@ -161,7 +182,7 @@ namespace alpaka
                 ALPAKA_ASSERT_ACC(false);
             }
         }
-        return IdxRange{m_begin, m_end, range.m_stride};
+        return IdxRange{m_begin, m_end, range.getStrideMd()};
     }
 
     namespace internal
@@ -177,7 +198,10 @@ namespace alpaka
                 requires std::convertible_to<typename T_End::value_type, T_To>
                          && (!std::same_as<T_To, typename T_End::value_type>)
             {
-                return IdxRange{pCast<T_To>(input.m_begin), pCast<T_To>(input.m_end), pCast<T_To>(input.m_stride)};
+                return IdxRange{
+                    pCast<T_To>(input.getBeginMd()),
+                    pCast<T_To>(input.getEndMd()),
+                    pCast<T_To>(input.getStrideMd())};
             }
 
             constexpr decltype(auto) operator()(auto&& input) const

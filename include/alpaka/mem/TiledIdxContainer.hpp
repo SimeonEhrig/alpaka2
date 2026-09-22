@@ -257,15 +257,15 @@ namespace alpaka::onAcc
             if constexpr(std::is_same_v<T_IdxMapperFn, layout::Strided>)
             {
                 return const_iterator(
-                    m_idxRange.m_begin,
-                    threadIdx * m_idxRange.m_stride,
+                    m_idxRange.getBeginMd(),
+                    threadIdx * m_idxRange.getStrideMd(),
                     m_idxRange.distance(),
-                    numThreads * m_idxRange.m_stride);
+                    numThreads * m_idxRange.getStrideMd());
             }
             else if constexpr(std::is_same_v<T_IdxMapperFn, layout::Contiguous>)
             {
                 IdxVecType extent = m_idxRange.distance();
-                IdxVecType logicalExtent = divCeil(extent, m_idxRange.m_stride);
+                IdxVecType logicalExtent = divCeil(extent, m_idxRange.getStrideMd());
 
                 // elements per slot
                 IdxVecType base = logicalExtent / numThreads;
@@ -273,14 +273,14 @@ namespace alpaka::onAcc
                 IdxVecType rem = logicalExtent % numThreads;
 
                 IdxVecType firstLogical = threadIdx * base + threadIdx.min(rem);
-                IdxVecType first = firstLogical * m_idxRange.m_stride;
+                IdxVecType first = firstLogical * m_idxRange.getStrideMd();
 
                 IdxVecType nextThreadIdx = threadIdx + IdxType{1};
                 IdxVecType endLogical = nextThreadIdx * base + nextThreadIdx.min(rem);
                 // crop to the end of the index range
-                IdxVecType end = extent.min(endLogical * m_idxRange.m_stride);
+                IdxVecType end = extent.min(endLogical * m_idxRange.getStrideMd());
 
-                return const_iterator(m_idxRange.m_begin, first, end, m_idxRange.m_stride);
+                return const_iterator(m_idxRange.getBeginMd(), first, end, m_idxRange.getStrideMd());
             }
         }
 
@@ -291,12 +291,12 @@ namespace alpaka::onAcc
 
             if constexpr(std::is_same_v<T_IdxMapperFn, layout::Strided>)
             {
-                return const_iterator_end(m_idxRange.m_begin + m_idxRange.distance());
+                return const_iterator_end(m_idxRange.getBeginMd() + m_idxRange.distance());
             }
             else if constexpr(std::is_same_v<T_IdxMapperFn, layout::Contiguous>)
             {
                 IdxVecType extent = m_idxRange.distance();
-                IdxVecType logicalExtent = divCeil(extent, m_idxRange.m_stride);
+                IdxVecType logicalExtent = divCeil(extent, m_idxRange.getStrideMd());
 
                 // elements per slot
                 IdxVecType base = logicalExtent / numThreads;
@@ -306,9 +306,9 @@ namespace alpaka::onAcc
                 IdxVecType nextSlotIdx = threadIdx + IdxType{1};
                 IdxVecType endLogical = nextSlotIdx * base + nextSlotIdx.min(rem);
                 // crop to the end of the index range
-                IdxVecType end = extent.min(endLogical * m_idxRange.m_stride);
+                IdxVecType end = extent.min(endLogical * m_idxRange.getStrideMd());
 
-                return const_iterator_end(m_idxRange.m_begin + end);
+                return const_iterator_end(m_idxRange.getBeginMd() + end);
             }
         }
 
