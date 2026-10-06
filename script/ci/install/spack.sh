@@ -15,7 +15,7 @@ fi
 
 script_msg "Spack"
 
-if ! command -v spack; then
+if ! command -v spack >/dev/null && [[ ! -d /spack ]]; then
     echo_green "install spack"
 
     spack_package_dependencies=(
@@ -37,7 +37,10 @@ if ! command -v spack; then
     # shellcheck source=/dev/null
     . /spack/share/spack/setup-env.sh
 
-    spack mirror add gitlabci oci://registry.hzdr.de/crp/alpaka-spack-buildcache/CIv1
+    echo_run spack bootstrap now
+    echo_run spack compiler find
+
+    echo_run spack mirror add gitlabci oci://registry.hzdr.de/crp/alpaka-spack-buildcache/CIv1
 fi
 
 # TODO: This is hack. Installing GCC and CMake should be done in gcc.sh and cmake.sh. Only for testing
@@ -45,5 +48,5 @@ fi
 
 parse_compiler_version "$APCI_DEVICE_COMPILER"
 
-spack install --use-buildcache only "${compiler_name}@${compiler_version}"
-spack install --use-buildcache only "cmake@${APCI_CMAKE}"
+echo_run spack install --use-buildcache only "${compiler_name}@${compiler_version}"
+echo_run spack install --use-buildcache only "cmake@${APCI_CMAKE}"

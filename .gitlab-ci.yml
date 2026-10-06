@@ -95,7 +95,7 @@ linux_gcc15_cmake3.31.12_ubuntu24.04_cxx20_tbb:
   variables:
     APCI_ALPAKA_ROOT: $CI_PROJECT_DIR
     APCI_CLANG_TIDY: 'OFF'
-    APCI_CMAKE: 3.31.12
+    APCI_CMAKE: 3.31.11
     APCI_CUDA: 0
     APCI_DEVICE_COMPILER: gcc@15
     APCI_EXEC_CPU_SERIAL: 'ON'

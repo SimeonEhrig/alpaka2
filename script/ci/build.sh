@@ -10,14 +10,11 @@ source "${APCI_ALPAKA_ROOT}/script/ci/utils/default.sh"
 
 script_msg "Run CMake build (build.sh)"
 
-if ! command -v spack; then
-    # shellcheck source=/dev/null
-    . /spack/share/spack/setup-env.sh
-fi
-
 if [ -z ${_spack_loaded+x} ]; then
+    parse_compiler_version "$APCI_DEVICE_COMPILER"
     spack load "${compiler_name}@${compiler_version}"
     spack load "cmake@${APCI_CMAKE}"
+    _spack_loaded=1
 fi
 
 # Return the number of build threads depending on the
@@ -102,7 +99,6 @@ for sanitizer in ASAN TSAN LSAN UBSAN; do
 done
 
 parse_compiler_version "$APCI_DEVICE_COMPILER"
-load_variable_if_not_exist APCI_CMAKE_BIN_PATH
 
 echo_green \
     "$(echo_if_not_empty LD_LIBRARY_PATH)" \
@@ -110,8 +106,8 @@ echo_green \
     "$(echo_if_not_empty_and_set TSAN_OPTIONS)" \
     "$(echo_if_not_empty_and_set LSAN_OPTIONS)" \
     "$(echo_if_not_empty_and_set UBSAN_OPTIONS)" \
-    "${APCI_CMAKE_BIN_PATH}/cmake" \
+    cmake \
     --build /build \
     "-j${APCI_BUILD_THREADS}"
 
-"${APCI_CMAKE_BIN_PATH}/cmake" --build /build "-j${APCI_BUILD_THREADS}"
+cmake --build /build "-j${APCI_BUILD_THREADS}"

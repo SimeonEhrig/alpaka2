@@ -15,18 +15,14 @@ parse_compiler_version "$APCI_DEVICE_COMPILER"
 CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH:-""}
 LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-""}
 
-load_variable_if_not_exist APCI_CMAKE_BIN_PATH
-load_variable_if_not_exist APCI_CXX_COMPILER
-
-if ! command -v spack; then
-    # shellcheck source=/dev/null
-    . /spack/share/spack/setup-env.sh
-fi
-
-if [ -z ${_spack_loaded+x} ]; then
+if [[ -z ${_spack_loaded+x} ]]; then
     spack load "${compiler_name}@${compiler_version}"
     spack load "cmake@${APCI_CMAKE}"
+    _spack_loaded=1
+    APCI_CXX_COMPILER=g++
 fi
+
+load_variable_if_not_exist APCI_CXX_COMPILER
 
 CMAKE_ARGS=(
     -S "${APCI_ALPAKA_ROOT}"
@@ -180,7 +176,7 @@ echo_green \
     "$(echo_if_not_empty_and_set TSAN_OPTIONS)" \
     "$(echo_if_not_empty_and_set LSAN_OPTIONS)" \
     "$(echo_if_not_empty_and_set UBSAN_OPTIONS)" \
-    "${APCI_CMAKE_BIN_PATH}/cmake" \
+    "cmake" \
     "${CMAKE_ARGS[*]}"
 
-"${APCI_CMAKE_BIN_PATH}/cmake" "${CMAKE_ARGS[@]}"
+cmake "${CMAKE_ARGS[@]}"
