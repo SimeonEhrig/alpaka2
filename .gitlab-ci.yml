@@ -79,8 +79,8 @@
 stages:
   - runtime_job_cpu_stage2
 
-linux_gcc15_cmake3.31.12_ubuntu24.04_cxx20_tbb:
-  image: registry.hzdr.de/crp/alpaka-group-container/alpaka-ci-ubuntu24.04-gcc:4.1
+linux_gcc15_cmake3.31.12_ubuntu24.04_cxx20:
+  image: registry.hzdr.de/crp/alpaka-spack-buildcache/alpaka-ci-spack-ubuntu24.04:1.2
   interruptible: true
   script:
   - $APCI_ALPAKA_ROOT/script/ci/info.sh
@@ -110,4 +110,37 @@ linux_gcc15_cmake3.31.12_ubuntu24.04_cxx20_tbb:
     APCI_SANITIZER_TSAN: 'OFF'
     APCI_SANITIZER_UBSAN: 'OFF'
     APCI_SIMD: DEFAULT
-    APCI_TBB: 'ON'
+    APCI_TBB: 'OFF'
+
+linux_gcc15_cmake3.31.12_ubuntu22.04_cxx20:
+  image: registry.hzdr.de/crp/alpaka-spack-buildcache/alpaka-ci-spack-ubuntu22.04:1.2
+  interruptible: true
+  script:
+  - $APCI_ALPAKA_ROOT/script/ci/info.sh
+  - $APCI_ALPAKA_ROOT/script/ci/install.sh
+  - $APCI_ALPAKA_ROOT/script/ci/configure.sh
+  - $APCI_ALPAKA_ROOT/script/ci/build.sh
+  - $APCI_ALPAKA_ROOT/script/ci/test.sh
+  stage: runtime_job_cpu_stage2
+  tags:
+  - x86_64
+  - cpuonly
+  variables:
+    APCI_ALPAKA_ROOT: $CI_PROJECT_DIR
+    APCI_CLANG_TIDY: 'OFF'
+    APCI_CMAKE: 3.31.11
+    APCI_CUDA: 0
+    APCI_DEVICE_COMPILER: gcc@15
+    APCI_EXEC_CPU_SERIAL: 'ON'
+    APCI_HIP: 0
+    APCI_HWLOC: 'OFF'
+    APCI_OMP: 'OFF'
+    APCI_ONEAPI: 0
+    APCI_ONEAPI_TARGET: none
+    APCI_RUN_CTEST: 'ON'
+    APCI_SANITIZER_ASAN: 'OFF'
+    APCI_SANITIZER_LSAN: 'OFF'
+    APCI_SANITIZER_TSAN: 'OFF'
+    APCI_SANITIZER_UBSAN: 'OFF'
+    APCI_SIMD: DEFAULT
+    APCI_TBB: 'OFF'

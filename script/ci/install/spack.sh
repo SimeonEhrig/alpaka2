@@ -15,7 +15,7 @@ fi
 
 script_msg "Spack"
 
-if ! command -v spack >/dev/null && [[ ! -d /spack ]]; then
+if ! command -v spack >/dev/null && [[ ! -d /opt/spack ]]; then
     echo_green "install spack"
 
     spack_package_dependencies=(
@@ -33,14 +33,22 @@ if ! command -v spack >/dev/null && [[ ! -d /spack ]]; then
     lazy_apt_update
     quiet_run sudo DEBIAN_FRONTEND=noninteractive apt install -y "${spack_package_dependencies[@]}"
 
-    git clone --depth=2 --branch=releases/v1.2 https://github.com/spack/spack.git /spack
+    git clone --depth=2 --branch=releases/v1.2 https://github.com/spack/spack.git /opt/spack
     # shellcheck source=/dev/null
-    . /spack/share/spack/setup-env.sh
+    . /opt/spack/share/spack/setup-env.sh
 
     echo_run spack bootstrap now
     echo_run spack compiler find
+fi
 
-    echo_run spack mirror add gitlabci oci://registry.hzdr.de/crp/alpaka-spack-buildcache/CIv1
+if ! spack mirror ls | grep -q gitlabci; then
+    source /etc/os-release
+    if [[ $NAME != "Ubuntu" ]]; then
+        exit_error "Container image does not base on Ubuntu."
+    fi
+
+    _mirror_url="oci://registry.hzdr.de/crp/alpaka-spack-buildcache/cache-ubuntu${VERSION_ID//./}"
+    echo_run spack mirror add gitlabci "${_mirror_url}"
 fi
 
 # TODO: This is hack. Installing GCC and CMake should be done in gcc.sh and cmake.sh. Only for testing
