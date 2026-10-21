@@ -39,6 +39,21 @@ if [[ "$compiler_name" == "clang" && "$APCI_HIP" == 0 ]]; then
             APCI_CXX_COMPILER=$(which clang++)
             export APCI_CXX_COMPILER
 
+            # add path to libomp.so the the LD_LIBRARY_PATH
+            _clang_base_path=$(realpath "$(dirname "$APCI_CXX_COMPILER")/..")
+            _clang_lib_omp_path=$(realpath "${_clang_base_path}/lib/x86_64-unknown-linux-gnu/")
+
+            if ! exist_variable APCI_LD_LIBRARY_PATH; then
+                APCI_LD_LIBRARY_PATH="${_clang_lib_omp_path}"
+            else
+                load_variable APCI_LD_LIBRARY_PATH
+                APCI_LD_LIBRARY_PATH="${APCI_LD_LIBRARY_PATH}:${_clang_lib_omp_path}"
+            fi
+            store_variable APCI_LD_LIBRARY_PATH
+
+            unset _clang_base_path
+            unset _clang_lib_omp_path
+
             spack unload "llvm@${compiler_version}"
 
             APCI_SPACK_PKGS+=(llvm@${compiler_version})

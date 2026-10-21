@@ -14,6 +14,10 @@ parse_compiler_version "$APCI_DEVICE_COMPILER"
 
 CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH:-""}
 LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-""}
+if exist_variable APCI_LD_LIBRARY_PATH; then
+    load_variable APCI_LD_LIBRARY_PATH
+    LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${APCI_LD_LIBRARY_PATH}"
+fi
 
 if [[ -z ${_spack_loaded+x} ]]; then
     load_required_spack_pkg
@@ -161,6 +165,10 @@ done
 for dep in "${!ap_deps[@]}"; do
     CMAKE_ARGS+=("-Dalpaka_DEP_${dep}=${ap_deps[$dep]}")
 done
+
+if [[ "${LD_LIBRARY_PATH}" != "" ]]; then
+    export LD_LIBRARY_PATH
+fi
 
 # enable executor
 CMAKE_ARGS+=(

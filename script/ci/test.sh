@@ -19,6 +19,10 @@ if [[ -z ${_spack_loaded+x} ]]; then
 fi
 
 LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-""}
+if exist_variable APCI_LD_LIBRARY_PATH; then
+    load_variable APCI_LD_LIBRARY_PATH
+    LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${APCI_LD_LIBRARY_PATH}"
+fi
 
 if [[ "$APCI_ONEAPI" != 0 ]]; then
     if [[ ! "${APCI_IMAGE_NAME}" =~ "intel/oneapi" ]]; then
@@ -43,6 +47,10 @@ done
 parse_compiler_version "$APCI_DEVICE_COMPILER"
 
 if [[ "${APCI_RUN_CTEST}" == "ON" ]]; then
+    if [[ "${LD_LIBRARY_PATH}" != "" ]]; then
+        export LD_LIBRARY_PATH
+    fi
+
     load_variable_if_not_exist APCI_CMAKE_BIN_PATH
 
     echo_green \
