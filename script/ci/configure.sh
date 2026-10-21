@@ -16,12 +16,14 @@ CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH:-""}
 LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-""}
 
 if [[ -z ${_spack_loaded+x} ]]; then
-    spack load "${compiler_name}@${compiler_version}"
-    spack load "cmake@${APCI_CMAKE}"
+    load_required_spack_pkg
+    if [[ "${#APCI_SPACK_PKGS[@]}" -gt 0 ]]; then
+        echo_run spack load ${APCI_SPACK_PKGS[@]}
+    fi
     _spack_loaded=1
-    APCI_CXX_COMPILER=g++
 fi
 
+load_variable_if_not_exist APCI_CMAKE_BIN_PATH
 load_variable_if_not_exist APCI_CXX_COMPILER
 
 CMAKE_ARGS=(
@@ -176,7 +178,7 @@ echo_green \
     "$(echo_if_not_empty_and_set TSAN_OPTIONS)" \
     "$(echo_if_not_empty_and_set LSAN_OPTIONS)" \
     "$(echo_if_not_empty_and_set UBSAN_OPTIONS)" \
-    "cmake" \
+    "${APCI_CMAKE_BIN_PATH}/cmake" \
     "${CMAKE_ARGS[*]}"
 
-cmake "${CMAKE_ARGS[@]}"
+"${APCI_CMAKE_BIN_PATH}/cmake" "${CMAKE_ARGS[@]}"

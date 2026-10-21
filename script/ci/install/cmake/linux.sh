@@ -5,11 +5,25 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 
-if agc-manager -e "cmake@${APCI_CMAKE}"; then
-    echo_green "use preinstalled cmake@${APCI_CMAKE}"
+if spack_exist "cmake@${APCI_CMAKE}"; then
+    load_required_spack_pkg
+    if [[ ${APCI_SPACK_PKGS[*]} =~ "cmake@${APCI_CMAKE}" ]]; then
+        echo_green "spack package cmake@${APCI_CMAKE} is already installed"
+        load_variable APCI_CMAKE_BIN_PATH
+    else
+        echo_run spack install --use-buildcache only "cmake@${APCI_CMAKE}" arch="linux-$(spack arch -o)-x86_64_v3"
 
-    APCI_CMAKE_BIN_PATH=$(agc-manager -b "cmake@${APCI_CMAKE}")/bin
-    export APCI_CMAKE_BIN_PATH
+        spack load "cmake@${APCI_CMAKE}"
+
+        APCI_CMAKE_BIN_PATH=$(dirname $(which cmake))
+        export APCI_CMAKE_BIN_PATH
+
+        spack unload "cmake@${APCI_CMAKE}"
+
+        load_required_spack_pkg
+        APCI_SPACK_PKGS+=("cmake@${APCI_CMAKE}")
+        store_required_spack_pkg
+    fi
 else
     install_msg "cmake@${APCI_CMAKE}"
 

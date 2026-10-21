@@ -15,46 +15,59 @@ fi
 
 script_msg "Spack"
 
-if ! command -v spack >/dev/null && [[ ! -d /opt/spack ]]; then
-    echo_green "install spack"
+if [[ "$APCI_FAKE_SPACK" == "OFF" ]]; then
+    if ! command -v spack >/dev/null && [[ ! -d /opt/spack ]]; then
+        echo_green "install spack"
 
-    spack_package_dependencies=(
-        file
-        bzip2
-        ca-certificates
-        g++
-        gcc
-        gfortran
-        git
-        gzip
-        lsb-release
-        patch
-        python3)
-    lazy_apt_update
-    quiet_run sudo DEBIAN_FRONTEND=noninteractive apt install -y "${spack_package_dependencies[@]}"
+        spack_package_dependencies=(
+            file
+            bzip2
+            ca-certificates
+            g++
+            gcc
+            gfortran
+            git
+            gzip
+            lsb-release
+            patch
+            python3)
+        lazy_apt_update
+        quiet_run sudo DEBIAN_FRONTEND=noninteractive apt install -y "${spack_package_dependencies[@]}"
 
-    git clone --depth=2 --branch=releases/v1.2 https://github.com/spack/spack.git /opt/spack
-    # shellcheck source=/dev/null
-    . /opt/spack/share/spack/setup-env.sh
+        git clone --depth=2 --branch=releases/v1.2 https://github.com/spack/spack.git /opt/spack
+        # shellcheck source=/dev/null
+        . /opt/spack/share/spack/setup-env.sh
 
-    echo_run spack bootstrap now
-    echo_run spack compiler find
-fi
-
-if ! spack mirror ls | grep -q gitlabci; then
-    source /etc/os-release
-    if [[ $NAME != "Ubuntu" ]]; then
-        exit_error "Container image does not base on Ubuntu."
+        echo_run spack bootstrap now
+        echo_run spack compiler find
     fi
 
-    _mirror_url="oci://registry.hzdr.de/crp/alpaka-spack-buildcache/cache-ubuntu${VERSION_ID//./}"
-    echo_run spack mirror add gitlabci "${_mirror_url}"
+    if ! spack mirror ls | grep -q gitlabci; then
+        source /etc/os-release
+        if [[ $NAME != "Ubuntu" ]]; then
+            exit_error "Container image does not base on Ubuntu."
+        fi
+
+        _mirror_url="oci://registry.hzdr.de/crp/alpaka-spack-buildcache/cache-ubuntu${VERSION_ID//./}"
+        echo_run spack mirror add gitlabci "${_mirror_url}"
+    fi
+else
+    echo_yellow "install fake spack"
+
+    echo -e "#!/bin/bash\n\nexit 1" >>spack
+
+    if [[ "$APCI_OS_NAME" = "Linux" ]]; then
+        sudo chmod +x spack
+        sudo mv spack /usr/bin/spack
+    elif [[ "$APCI_OS_NAME" = "Windows" ]]; then
+        chmod +x spack
+        mv spack /usr/bin
+    elif [[ "$APCI_OS_NAME" = "macOS" ]]; then
+        sudo chmod +x spack
+        sudo mv spack /usr/local/bin
+    else
+        echo_red "installing spack: " \
+            "unknown operation system: ${APCI_OS_NAME}"
+        exit 1
+    fi
 fi
-
-# TODO: This is hack. Installing GCC and CMake should be done in gcc.sh and cmake.sh. Only for testing
-: "${APCI_DEVICE_COMPILER?'The device compiler must be specified'}"
-
-parse_compiler_version "$APCI_DEVICE_COMPILER"
-
-echo_run spack install --use-buildcache only "${compiler_name}@${compiler_version}"
-echo_run spack install --use-buildcache only "cmake@${APCI_CMAKE}"

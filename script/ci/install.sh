@@ -19,10 +19,10 @@ script_msg "Install software dependencies (install.sh)"
 
 # shellcheck source=script/ci/install/spack.sh
 source "${APCI_ALPAKA_ROOT}/script/ci/install/spack.sh"
-# # shellcheck source=script/ci/install/cmake.sh
-# source "${APCI_ALPAKA_ROOT}/script/ci/install/cmake.sh"
-# # shellcheck source=script/ci/install/gcc.sh
-# source "${APCI_ALPAKA_ROOT}/script/ci/install/gcc.sh"
+# shellcheck source=script/ci/install/cmake.sh
+source "${APCI_ALPAKA_ROOT}/script/ci/install/cmake.sh"
+# shellcheck source=script/ci/install/gcc.sh
+source "${APCI_ALPAKA_ROOT}/script/ci/install/gcc.sh"
 # shellcheck source=script/ci/install/clang.sh
 source "${APCI_ALPAKA_ROOT}/script/ci/install/clang.sh"
 # shellcheck source=script/ci/install/hwloc.sh

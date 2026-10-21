@@ -10,10 +10,11 @@ source "${APCI_ALPAKA_ROOT}/script/ci/utils/default.sh"
 
 script_msg "Run CMake build (build.sh)"
 
-if [ -z ${_spack_loaded+x} ]; then
-    parse_compiler_version "$APCI_DEVICE_COMPILER"
-    spack load "${compiler_name}@${compiler_version}"
-    spack load "cmake@${APCI_CMAKE}"
+if [[ -z ${_spack_loaded+x} ]]; then
+    load_required_spack_pkg
+    if [[ "${#APCI_SPACK_PKGS[@]}" -gt 0 ]]; then
+        echo_run spack load ${APCI_SPACK_PKGS[@]}
+    fi
     _spack_loaded=1
 fi
 
@@ -99,6 +100,7 @@ for sanitizer in ASAN TSAN LSAN UBSAN; do
 done
 
 parse_compiler_version "$APCI_DEVICE_COMPILER"
+load_variable_if_not_exist APCI_CMAKE_BIN_PATH
 
 echo_green \
     "$(echo_if_not_empty LD_LIBRARY_PATH)" \
@@ -106,8 +108,8 @@ echo_green \
     "$(echo_if_not_empty_and_set TSAN_OPTIONS)" \
     "$(echo_if_not_empty_and_set LSAN_OPTIONS)" \
     "$(echo_if_not_empty_and_set UBSAN_OPTIONS)" \
-    cmake \
+    "${APCI_CMAKE_BIN_PATH}/cmake" \
     --build /build \
     "-j${APCI_BUILD_THREADS}"
 
-cmake --build /build "-j${APCI_BUILD_THREADS}"
+"${APCI_CMAKE_BIN_PATH}/cmake" --build /build "-j${APCI_BUILD_THREADS}"

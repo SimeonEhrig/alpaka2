@@ -157,6 +157,9 @@ jobs:
         run: |
           "${APCI_ALPAKA_ROOT}/script/ci/install/basic.sh"
 
+      - name: Install Spack
+        run: "${APCI_ALPAKA_ROOT}/script/ci/install/spack.sh"
+
       - name: Install CMake
         run: "${APCI_ALPAKA_ROOT}/script/ci/install/cmake.sh"
 
