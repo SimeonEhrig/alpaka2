@@ -26,13 +26,24 @@ script_msg "Install Clang"
 
 # If HIP is enabled, the clang compiler is handled by the rocm.sh script
 if [[ "$compiler_name" == "clang" && "$APCI_HIP" == 0 ]]; then
-    if agc-manager -e "clang@${compiler_version}"; then
-        echo_green "use preinstalled clang@${compiler_version}"
+    if spack_exist "llvm@${compiler_version}"; then
+        load_required_spack_pkg
+        if [[ ${APCI_SPACK_PKGS[*]} =~ "llvm@${compiler_version}" ]]; then
+            echo_green "spack package llvm@${compiler_version} is already installed"
+            load_variable APCI_CXX_COMPILER
+        else
+            echo_run spack install --use-buildcache only "llvm@${compiler_version}" arch="linux-$(spack arch -o)-x86_64_v3"
 
-        # TODO: Because of a bug in clang OpenMP apt package, no clang version is preinstalled
-        # in alpaka-group-container and I cannot test what is the correct way to set the
-        # required environment variables
-        exit_error "Using preinstalled Clang provide by the agc-manager is not implemented yet."
+            spack load "llvm@${compiler_version}"
+
+            APCI_CXX_COMPILER=$(which clang++)
+            export APCI_CXX_COMPILER
+
+            spack unload "llvm@${compiler_version}"
+
+            APCI_SPACK_PKGS+=(llvm@${compiler_version})
+            store_required_spack_pkg
+        fi
     else
         install_msg "Clang $compiler_version"
 
