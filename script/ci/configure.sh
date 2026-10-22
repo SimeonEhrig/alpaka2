@@ -69,9 +69,12 @@ fi
 if [[ "$APCI_HIP" != 0 ]]; then
     load_variable_if_not_exist ROCM_PATH
 
-    export PATH=${ROCM_PATH}/bin:$PATH
-    export PATH=${ROCM_PATH}/llvm/bin:$PATH
-    export CMAKE_PREFIX_PATH=$ROCM_PATH:$CMAKE_PREFIX_PATH
+    # spack automatically set the paths
+    if echo "${APCI_SPACK_PKGS[@]}" | grep -v 'hip@'; then
+        export PATH=${ROCM_PATH}/bin:$PATH
+        export PATH=${ROCM_PATH}/llvm/bin:$PATH
+        export CMAKE_PREFIX_PATH=$ROCM_PATH:$CMAKE_PREFIX_PATH
+    fi
 
     ap_deps['HIP']=ON
 
