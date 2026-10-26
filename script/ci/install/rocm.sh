@@ -39,6 +39,9 @@ if [[ "$APCI_HIP" != 0 ]]; then
             echo_run spack install --use-buildcache only "hiprand@${APCI_HIP}" \
                 "amdgpu_target=${_spack_amd_gpu_arch}" \
                 arch="linux-$(spack arch -o)-x86_64_v3"
+            echo_run spack install --use-buildcache only "hipcub@${APCI_HIP}" \
+                "amdgpu_target=${_spack_amd_gpu_arch}" \
+                arch="linux-$(spack arch -o)-x86_64_v3"
 
             unset _spack_amd_gpu_arch
 
@@ -47,7 +50,7 @@ if [[ "$APCI_HIP" != 0 ]]; then
             echo_run hipconfig
             spack unload "hip@${APCI_HIP}"
 
-            APCI_SPACK_PKGS+=("hip@${APCI_HIP}" "hiprand@${APCI_HIP}")
+            APCI_SPACK_PKGS+=("hip@${APCI_HIP}" "hiprand@${APCI_HIP}" "hipcub@${APCI_HIP}")
             store_required_spack_pkg
         fi
     else
